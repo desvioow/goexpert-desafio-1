@@ -15,7 +15,17 @@ import (
 
 type UsdBrlJson struct {
 	USDBRL struct {
-		Bid string `json:"bid"`
+		Code       string `json:"code"`
+		Codein     string `json:"codein"`
+		Name       string `json:"name"`
+		High       string `json:"high"`
+		Low        string `json:"low"`
+		VarBid     string `json:"varBid"`
+		PctChange  string `json:"pctChange"`
+		Bid        string `json:"bid"`
+		Ask        string `json:"ask"`
+		Timestamp  string `json:"timestamp"`
+		CreateDate string `json:"create_date"`
 	} `json:"USDBRL"`
 }
 
@@ -37,18 +47,18 @@ func cotacaoHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer db.Close()
 
-	bid, err := strconv.ParseFloat(apiJson.USDBRL.Bid, 64)
+	bid, err := strconv.ParseFloat(apiJson["bid"], 64)
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	err = insertBidIntoDb(db, bid)
 	if err != nil {
 		log.Fatal(err)
 	}
-
 }
 
-func cotacaoRequest(w http.ResponseWriter, r *http.Request) (*UsdBrlJson, error) {
+func cotacaoRequest(w http.ResponseWriter, r *http.Request) (map[string]string, error) {
 
 	ctx, cancel := context.WithTimeout(r.Context(), time.Millisecond*200)
 	defer cancel()
@@ -74,8 +84,11 @@ func cotacaoRequest(w http.ResponseWriter, r *http.Request) (*UsdBrlJson, error)
 		return nil, err
 	}
 
-	json.NewEncoder(w).Encode(apiJson)
-	return &apiJson, nil
+	var bidMap = make(map[string]string)
+	bidMap["bid"] = apiJson.USDBRL.Bid
+
+	json.NewEncoder(w).Encode(bidMap)
+	return bidMap, nil
 }
 
 func retrieveDb() (*sql.DB, error) {
@@ -100,10 +113,10 @@ func insertBidIntoDb(db *sql.DB, bid float64) error {
 	insert_query := `INSERT INTO usdxbrl (bid) values(?) `
 
 	stmt, err := db.Prepare(insert_query)
-	defer stmt.Close()
 	if err != nil {
 		return err
 	}
+	defer stmt.Close()
 
 	_, err = stmt.ExecContext(ctx, bid)
 	if err != nil {
