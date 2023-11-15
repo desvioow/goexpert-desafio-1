@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"time"
 
@@ -93,7 +94,12 @@ func cotacaoRequest(w http.ResponseWriter, r *http.Request) (map[string]string, 
 
 func retrieveDb() (*sql.DB, error) {
 
-	db, err := sql.Open("sqlite3", "sqlite.db")
+	file, err := os.OpenFile("sqlite.db", os.O_CREATE, 0644)
+	if err != nil {
+		return nil, err
+	}
+
+	db, err := sql.Open("sqlite3", file.Name())
 	if err != nil {
 		return nil, err
 	}
